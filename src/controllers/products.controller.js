@@ -75,3 +75,20 @@ export const updateProduct = async (req, res) => {
         res.status(500).json({ error: "Error al actualizar el producto" });
     }
 };
+
+// Eliminar un producto
+export const deleteProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const productoEliminado = await Producto.findByIdAndDelete(id);
+
+        if (!productoEliminado) {
+            return res.status(404).json({ error: "Producto no encontrado" });
+        }
+
+        res.status(200).json({ message: "Producto eliminado exitosamente" });
+    } catch (error) {
+        console.error("Error al eliminar el producto:", error);
+        res.status(500).json({ error: "Error al eliminar el producto" });
+    }
+};
