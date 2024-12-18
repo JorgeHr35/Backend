@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import {
   getAllProducts,
   getProductById,
@@ -10,6 +11,32 @@ import { body, param, validationResult } from "express-validator";
 
 const router = express.Router();
 
+// --- Configuración de Multer (Única y Corregida) ---
+// Almacenamiento y nombre del archivo
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Carpeta donde se almacenarán las imágenes
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    // Reemplazar espacios en blanco con guiones bajos
+    const sanitizedFilename = file.originalname.replace(/\s+/g, "_");
+    cb(null, ${uniqueSuffix}-${sanitizedFilename});
+  },
+});
+
+// Filtro para aceptar solo imágenes
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("El archivo debe ser una imagen válida (jpg, png, etc.)"), false);
+  }
+};
+
+// Middleware de multer
+const upload = multer({ storage, fileFilter });
+
 // Middleware para manejar errores de validación
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
@@ -19,12 +46,9 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// --- Rutas Públicas ---
-
-// Obtener todos los productos
+// --- Rutas Públicas (sin protecciones) ---
 router.get("/", getAllProducts);
 
-// Obtener un producto por ID
 router.get(
   "/:id",
   [
@@ -34,45 +58,35 @@ router.get(
   getProductById
 );
 
-// Crear un nuevo producto (Imagen Base64)
+// --- Crear Producto con Imagen ---
 router.post(
   "/",
+  upload.single("imagen"), // Middleware para subir un archivo con nombre 'imagen'
   [
     body("nombre").notEmpty().withMessage("El nombre del producto es obligatorio"),
-    body("descripcion").optional().isString().withMessage("La descripción debe ser un texto válido"),
     body("precio")
       .notEmpty()
       .isFloat({ min: 0 })
       .withMessage("El precio debe ser mayor o igual a 0"),
-    body("categoria").notEmpty().isMongoId().withMessage("La categoría es obligatoria y válida"),
-    body("imagen_base64")
-      .optional()
-      .matches(/^data:image\/(png|jpeg|jpg|webp);base64,/)
-      .withMessage("La imagen debe ser una cadena Base64 válida"),
   ],
   handleValidationErrors,
   createProduct
 );
 
-// Actualizar un producto existente (Imagen Base64)
+// --- Actualizar Producto con Imagen ---
 router.put(
   "/:id",
+  upload.single("imagen"), // Middleware para actualizar un archivo
   [
     param("id").notEmpty().isMongoId().withMessage("ID inválido"),
     body("nombre").optional().notEmpty().withMessage("El nombre no puede estar vacío"),
-    body("descripcion").optional().isString().withMessage("La descripción debe ser un texto válido"),
     body("precio").optional().isFloat({ min: 0 }).withMessage("Precio inválido"),
-    body("categoria").optional().isMongoId().withMessage("La categoría debe ser válida"),
-    body("imagen_base64")
-      .optional()
-      .matches(/^data:image\/(png|jpeg|jpg|webp);base64,/)
-      .withMessage("La imagen debe ser una cadena Base64 válida"),
   ],
   handleValidationErrors,
   updateProduct
 );
 
-// Eliminar un producto por ID
+// --- Eliminar Producto ---
 router.delete(
   "/:id",
   [
