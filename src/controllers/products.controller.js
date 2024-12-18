@@ -1,95 +1,59 @@
-import Producto from "../models/products.model.js";
+import mongoose from "mongoose";
 
-// Obtener todos los productos con la categoría poblada
-export const getAllProducts = async (req, res) => {
-    try {
-        const productos = await Producto.find().populate("categoria", "nombre");
-        res.status(200).json(productos);
-    } catch (error) {
-        console.error("Error al obtener productos:", error);
-        res.status(500).json({ error: "Error al obtener productos" });
-    }
-};
+const productoSchema = new mongoose.Schema({
+    nombre: {
+        type: String,
+        required: [true, "El nombre del producto es obligatorio"],
+        trim: true,
+    },
+    descripcion: {
+        type: String,
+        trim: true,
+        maxlength: [500, "La descripción no puede exceder los 500 caracteres"],
+    },
+    precio: {
+        type: Number,
+        required: [true, "El precio del producto es obligatorio"],
+        min: [0, "El precio no puede ser negativo"],
+    },
+    categoria: {
+        type: mongoose.Schema.Types.ObjectId, // Relación con la tabla de categorías
+        ref: "Categoria", // Nombre del modelo de categorías
+        required: [true, "La categoría es obligatoria"],
+    },
+    stock: {
+        type: Number,
+        default: 0,
+        min: [0, "El stock no puede ser negativo"],
+    },
+    imagen_base64: {
+        type: String,
+        validate: {
+            validator: function (v) {
+                // Permitir nulo o una cadena Base64 válida
+                return (
+                    v === null ||
+                    /^data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=]+)$/.test(v)
+                );
+            },
+            message: "La imagen debe ser una cadena Base64 válida o nula",
+        },
+    },
+    fecha_creacion: {
+        type: Date,
+        default: Date.now,
+    },
+    fecha_actualizacion: {
+        type: Date,
+        default: Date.now,
+    },
+});
 
-// Obtener un producto por ID con la categoría poblada
-export const getProductById = async (req, res) => {
-    try {
-        const producto = await Producto.findById(req.params.id).populate("categoria", "nombre");
-        if (!producto) {
-            return res.status(404).json({ error: "Producto no encontrado" });
-        }
-        res.status(200).json(producto);
-    } catch (error) {
-        console.error("Error al obtener el producto:", error);
-        res.status(500).json({ error: "Error al obtener el producto" });
-    }
-};
+// Middleware para actualizar la fecha de modificación automáticamente
+productoSchema.pre("save", function (next) {
+    this.fecha_actualizacion = Date.now();
+    next();
+});
 
-// Crear un nuevo producto
-export const createProduct = async (req, res) => {
-    try {
-        const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
-
-        // Validar que los datos requeridos estén presentes
-        if (!nombre || !precio || !categoria) {
-            return res.status(400).json({ message: "Faltan datos requeridos" });
-        }
-
-        const nuevoProducto = new Producto({
-            nombre,
-            descripcion,
-            precio,
-            categoria,
-            stock: stock || 0,
-            imagen_base64: imagen_base64 || null, // Guardar la imagen en Base64 si existe
-        });
-
-        const productoGuardado = await nuevoProducto.save();
-        res.status(201).json(productoGuardado);
-    } catch (error) {
-        console.error("Error al crear producto:", error);
-        res.status(500).json({ message: "Error al crear el producto" });
-    }
-};
-
-// Actualizar un producto existente
-export const updateProduct = async (req, res) => {
-    try {
-        const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
-
-        const producto = await Producto.findById(req.params.id);
-        if (!producto) {
-            return res.status(404).json({ error: "Producto no encontrado" });
-        }
-
-        // Actualizar campos
-        producto.nombre = nombre || producto.nombre;
-        producto.descripcion = descripcion || producto.descripcion;
-        producto.precio = precio || producto.precio;
-        producto.categoria = categoria || producto.categoria;
-        producto.stock = stock !== undefined ? stock : producto.stock;
-        producto.imagen_base64 = imagen_base64 || producto.imagen_base64;
-
-        const productoActualizado = await producto.save();
-        res.status(200).json(productoActualizado);
-    } catch (error) {
-        console.error("Error al actualizar producto:", error);
-        res.status(500).json({ message: "Error al actualizar el producto" });
-    }
-};
-
-// Eliminar un producto
-export const deleteProduct = async (req, res) => {
-    try {
-        const productoEliminado = await Producto.findByIdAndDelete(req.params.id);
-
-        if (!productoEliminado) {
-            return res.status(404).json({ error: "Producto no encontrado" });
-        }
-
-        res.status(200).json({ message: "Producto eliminado exitosamente" });
-    } catch (error) {
-        console.error("Error al eliminar el producto:", error);
-        res.status(500).json({ error: "Error al eliminar el producto" });
-    }
-};
+const Producto = mongoose.model("Producto", productoSchema);
+export default Producto;
