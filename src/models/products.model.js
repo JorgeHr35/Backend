@@ -26,17 +26,19 @@ const productoSchema = new mongoose.Schema({
         default: 0,
         min: [0, "El stock no puede ser negativo"],
     },
+    imagen_url: {
     imagen_base64: {
         type: String,
+        trim: true,
         validate: {
             validator: function (v) {
-                // Permite una cadena Base64 válida o nula
-                return (
-                    v === null ||
-                    /^data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=]+)$/.test(v)
-                );
+                // Permite rutas locales (uploads/...) o URLs completas (http, https)
+                return /^(ftp|http|https):\/\/[^ "]+$/.test(v) || /^uploads\/[^ "]+$/.test(v);
+                // Permite una cadena Base64 válida
+                return /^data:image\/(png|jpeg|jpg|webp);base64,/.test(v) || v === null;
             },
-            message: "La imagen debe ser una cadena Base64 válida o nula",
+            message: "La URL de la imagen no es válida",
+            message: "La imagen no es una cadena Base64 válida",
         },
     },
     fecha_creacion: {
@@ -52,21 +54,6 @@ const productoSchema = new mongoose.Schema({
 // Middleware para actualizar la fecha de modificación automáticamente
 productoSchema.pre("save", function (next) {
     this.fecha_actualizacion = Date.now();
-    next();
-});
-
-// Middleware para validar la imagen Base64 antes de actualizar un documento
-productoSchema.pre("findOneAndUpdate", function (next) {
-    const update = this.getUpdate();
-    if (update.imagen_base64) {
-        const isValidBase64 = /^data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=]+)$/.test(
-            update.imagen_base64
-        );
-        if (!isValidBase64) {
-            const error = new Error("La imagen debe ser una cadena Base64 válida");
-            return next(error);
-        }
-    }
     next();
 });
 
