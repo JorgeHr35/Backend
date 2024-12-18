@@ -27,55 +27,46 @@ export const getProductById = async (req, res) => {
 
 // Crear un nuevo producto
 export const createProduct = async (req, res) => {
-    try {
-        const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
+  try {
+    const { name, price, year, image_base64 } = req.body;
 
-        // Guardar la imagen en Base64 si existe
-        const imagen_url = imagen_base64 || null;
+    const newProduct = new Products({
+      name,
+      price,
+      year,
+      image: image_base64 || null, // Guardar la imagen Base64 si existe
+      user: req.user.id,
+    });
 
-        const nuevoProducto = new Producto({
-            nombre,
-            descripcion,
-            precio,
-            categoria,
-            stock,
-            imagen_url, // Guardar la cadena Base64
-        });
-
-        const productoGuardado = await nuevoProducto.save();
-        res.status(201).json(productoGuardado);
-    } catch (error) {
-        console.error("Error al crear el producto:", error);
-        res.status(500).json({ error: "Error al crear el producto" });
-    }
+    const savedProduct = await newProduct.save();
+    res.json(savedProduct);
+  } catch (error) {
+    console.error("Error al crear producto:", error);
+    res.status(500).json({ message: "Error al crear el producto" });
+  }
 };
+
 
 // Actualizar un producto existente
-export const updateProduct = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
+export const editProduct = async (req, res) => {
+  try {
+    const { name, price, year, image_base64 } = req.body;
 
-        // Actualizar la imagen en Base64 si se envió
-        const imagen_url = imagen_base64 || null;
+    const updatedData = {
+      name,
+      price,
+      year,
+      image: image_base64 || req.product.image, // Actualizar la imagen si existe
+      user: req.user.id,
+    };
 
-        const productoActualizado = await Producto.findByIdAndUpdate(
-            id,
-            { nombre, descripcion, precio, categoria, stock, imagen_url },
-            { new: true } // Devuelve el producto actualizado
-        );
-
-        if (!productoActualizado) {
-            return res.status(404).json({ error: "Producto no encontrado" });
-        }
-
-        res.status(200).json(productoActualizado);
-    } catch (error) {
-        console.error("Error al actualizar el producto:", error);
-        res.status(500).json({ error: "Error al actualizar el producto" });
-    }
+    const updatedProduct = await Products.findByIdAndUpdate(req.params.id, updatedData, { new: true });
+    res.json(updatedProduct);
+  } catch (error) {
+    console.error("Error al editar producto:", error);
+    res.status(500).json({ message: "Error al editar el producto" });
+  }
 };
-
 // Eliminar un producto
 export const deleteProduct = async (req, res) => {
     try {
