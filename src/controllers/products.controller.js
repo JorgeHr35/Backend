@@ -4,7 +4,14 @@ import Producto from "../models/products.model.js";
 export const getAllProducts = async (req, res) => {
     try {
         const productos = await Producto.find().populate("categoria", "nombre");
-        res.status(200).json(productos);
+        // Modificar las URLs de imágenes a HTTPS si vienen de archivos locales
+        const productosConUrl = productos.map((producto) => ({
+            ...producto._doc,
+            imagen_url: producto.imagen_url?.startsWith("uploads")
+                ? `https://backend-12sq.onrender.com/${producto.imagen_url}`
+                : producto.imagen_url,
+        }));
+        res.status(200).json(productosConUrl);
     } catch (error) {
         console.error("Error al obtener productos:", error);
         res.status(500).json({ error: "Error al obtener productos" });
@@ -14,10 +21,19 @@ export const getAllProducts = async (req, res) => {
 // Obtener un producto por ID con la categoría poblada
 export const getProductById = async (req, res) => {
     try {
-        const producto = await Producto.findById(req.params.id).populate("categoria", "nombre");
+        let producto = await Producto.findById(req.params.id).populate("categoria", "nombre");
         if (!producto) {
             return res.status(404).json({ error: "Producto no encontrado" });
         }
+
+        // Modificar la URL si la imagen es local
+        producto = {
+            ...producto._doc,
+            imagen_url: producto.imagen_url?.startsWith("uploads")
+                ? `https://backend-12sq.onrender.com/${producto.imagen_url}`
+                : producto.imagen_url,
+        };
+
         res.status(200).json(producto);
     } catch (error) {
         console.error("Error al obtener el producto:", error);
@@ -30,8 +46,10 @@ export const createProduct = async (req, res) => {
     try {
         const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
 
-        // Guardar la imagen en Base64 si existe
-        const imagen_url = imagen_base64 || null;
+        // Si se subió un archivo, guarda la URL de uploads
+        const imagen_url = req.file
+            ? `uploads/${req.file.filename}` // Ruta local
+            : imagen_base64 || null; // Base64 si no se sube archivo
 
         const nuevoProducto = new Producto({
             nombre,
@@ -39,11 +57,16 @@ export const createProduct = async (req, res) => {
             precio,
             categoria,
             stock,
-            imagen_url, // Guardar la cadena Base64
+            imagen_url,
         });
 
         const productoGuardado = await nuevoProducto.save();
-        res.status(201).json(productoGuardado);
+        res.status(201).json({
+            ...productoGuardado._doc,
+            imagen_url: imagen_url.startsWith("uploads")
+                ? `https://backend-12sq.onrender.com/${imagen_url}`
+                : imagen_url,
+        });
     } catch (error) {
         console.error("Error al crear el producto:", error);
         res.status(500).json({ error: "Error al crear el producto" });
@@ -56,20 +79,27 @@ export const updateProduct = async (req, res) => {
         const { id } = req.params;
         const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
 
-        // Actualizar la imagen en Base64 si se envió
-        const imagen_url = imagen_base64 || null;
+        // Verifica si se subió un archivo o se envió una imagen en Base64
+        const imagen_url = req.file
+            ? `uploads/${req.file.filename}`
+            : imagen_base64 || null;
 
         const productoActualizado = await Producto.findByIdAndUpdate(
             id,
             { nombre, descripcion, precio, categoria, stock, imagen_url },
-            { new: true } // Devuelve el producto actualizado
+            { new: true }
         );
 
         if (!productoActualizado) {
             return res.status(404).json({ error: "Producto no encontrado" });
         }
 
-        res.status(200).json(productoActualizado);
+        res.status(200).json({
+            ...productoActualizado._doc,
+            imagen_url: imagen_url?.startsWith("uploads")
+                ? `https://backend-12sq.onrender.com/${imagen_url}`
+                : imagen_url,
+        });
     } catch (error) {
         console.error("Error al actualizar el producto:", error);
         res.status(500).json({ error: "Error al actualizar el producto" });
