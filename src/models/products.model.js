@@ -26,15 +26,14 @@ const productoSchema = new mongoose.Schema({
         default: 0,
         min: [0, "El stock no puede ser negativo"],
     },
-    imagen_url: {
+    imagen_base64: {
         type: String,
-        trim: true,
         validate: {
             validator: function (v) {
-                // Permite rutas locales (uploads/...) o URLs completas (http, https)
-                return /^(ftp|http|https):\/\/[^ "]+$/.test(v) || /^uploads\/[^ "]+$/.test(v);
+                // Permite una cadena Base64 válida
+                return /^data:image\/(png|jpeg|jpg|webp);base64,/.test(v) || v === null;
             },
-            message: "La URL de la imagen no es válida",
+            message: "La imagen no es una cadena Base64 válida",
         },
     },
     fecha_creacion: {
