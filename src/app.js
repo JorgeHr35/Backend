@@ -9,8 +9,6 @@ import categoryRoutes from "./routes/category.routes.js";
 import orderRoutes from "./routes/orders.routes.js";
 import path from "path";
 
-
-
 // Cargar variables de entorno
 dotenv.config();
 
@@ -40,17 +38,17 @@ app.use((req, res, next) => {
     next();
 });
 
+// Servir archivos estáticos desde la carpeta "uploads" con una URL absoluta
+const __dirname = path.resolve();
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Rutas principales
 try {
     app.use("/api/auth", authRoutes); // Autenticación
     app.use("/api/products", productRoutes); // Productos
-    
-    app.use("/api/inventory", inventoryRoutes);
-    app.use("/api/orders", orderRoutes);
-    app.use("/api/categories", categoryRoutes); // Rutas de categorías
-    app.use("/uploads", express.static("uploads"));
-    app.use("/uploads", express.static(path.join(path.resolve(), "src/uploads")));
-
+    app.use("/api/inventory", inventoryRoutes); // Inventario
+    app.use("/api/orders", orderRoutes); // Pedidos
+    app.use("/api/categories", categoryRoutes); // Categorías
 } catch (error) {
     console.error("Error al cargar rutas:", error.message);
 }
@@ -75,4 +73,3 @@ app.use((err, req, res, next) => {
 });
 
 export default app;
-
