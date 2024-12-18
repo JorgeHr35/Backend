@@ -3,7 +3,10 @@ import Producto from "../models/products.model.js";
 // Obtener todos los productos con la categoría poblada
 export const getAllProducts = async (req, res) => {
     try {
-        const productos = await Producto.find().populate("categoria", "nombre");
+        const productos = await Producto.find()
+            .populate("categoria", "nombre")
+            .lean()
+            .exec(); // Forzar la ejecución de la consulta
         res.status(200).json(productos);
     } catch (error) {
         console.error("Error al obtener productos:", error);
@@ -37,7 +40,7 @@ export const createProduct = async (req, res) => {
         nombre,
         descripcion,
         precio,
-        categoria,
+        categoria: { type: mongoose.Schema.Types.ObjectId, ref: "Categoria" },
         stock,
         imagen_url, // Guardar la ruta local
       });
