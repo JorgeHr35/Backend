@@ -21,7 +21,7 @@ const storage = multer.diskStorage({
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     // Reemplazar espacios en blanco con guiones bajos
     const sanitizedFilename = file.originalname.replace(/\s+/g, "_");
-    cb(null, ${uniqueSuffix}-${sanitizedFilename});
+    cb(null, `${uniqueSuffix}-${sanitizedFilename}`); // Usar backticks correctamente
   },
 });
 
