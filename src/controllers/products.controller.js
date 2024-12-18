@@ -26,13 +26,11 @@ export const getProductById = async (req, res) => {
 };
 
 // Crear un nuevo producto
-import Producto from "../models/products.model.js";
-
 export const createProduct = async (req, res) => {
     try {
         const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
 
-        // Verificar si se envió la imagen en Base64
+        // Guardar la imagen en Base64 si existe
         const imagen_url = imagen_base64 || null;
 
         const nuevoProducto = new Producto({
@@ -52,18 +50,14 @@ export const createProduct = async (req, res) => {
     }
 };
 
-  
-  
-
-
 // Actualizar un producto existente
 export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, descripcion, precio, categoria, stock } = req.body;
+        const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
 
-        // Obtener la ruta de la imagen subida si existe
-        const imagen_url = req.file ? req.file.path : req.body.imagen_url;
+        // Actualizar la imagen en Base64 si se envió
+        const imagen_url = imagen_base64 || null;
 
         const productoActualizado = await Producto.findByIdAndUpdate(
             id,
