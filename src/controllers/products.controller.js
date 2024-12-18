@@ -26,29 +26,32 @@ export const getProductById = async (req, res) => {
 };
 
 // Crear un nuevo producto
+import Producto from "../models/products.model.js";
+
 export const createProduct = async (req, res) => {
     try {
-      const { nombre, descripcion, precio, categoria, stock } = req.body;
-  
-      // Generar la ruta de la imagen si se subió
-      const imagen_url = req.file ? `uploads/${req.file.filename}` : null;
-  
-      const nuevoProducto = new Producto({
-        nombre,
-        descripcion,
-        precio,
-        categoria,
-        stock,
-        imagen_url, // Guardar la ruta local
-      });
-  
-      const productoGuardado = await nuevoProducto.save();
-      res.status(201).json(productoGuardado);
+        const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
+
+        // Verificar si se envió la imagen en Base64
+        const imagen_url = imagen_base64 || null;
+
+        const nuevoProducto = new Producto({
+            nombre,
+            descripcion,
+            precio,
+            categoria,
+            stock,
+            imagen_url, // Guardar la cadena Base64
+        });
+
+        const productoGuardado = await nuevoProducto.save();
+        res.status(201).json(productoGuardado);
     } catch (error) {
-      console.error("Error al crear el producto:", error);
-      res.status(500).json({ error: "Error al crear el producto" });
+        console.error("Error al crear el producto:", error);
+        res.status(500).json({ error: "Error al crear el producto" });
     }
-  };
+};
+
   
   
 
