@@ -27,51 +27,61 @@ export const getProductById = async (req, res) => {
 
 // Crear un nuevo producto
 export const createProduct = async (req, res) => {
-  try {
-    const { name, price, year, image_base64 } = req.body;
+    try {
+        const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
 
-    const newProduct = new Products({
-      name,
-      price,
-      year,
-      image: image_base64 || null, // Guardar la imagen Base64 si existe
-      user: req.user.id,
-    });
+        // Validar que los datos requeridos estén presentes
+        if (!nombre || !precio || !categoria) {
+            return res.status(400).json({ message: "Faltan datos requeridos" });
+        }
 
-    const savedProduct = await newProduct.save();
-    res.json(savedProduct);
-  } catch (error) {
-    console.error("Error al crear producto:", error);
-    res.status(500).json({ message: "Error al crear el producto" });
-  }
+        const nuevoProducto = new Producto({
+            nombre,
+            descripcion,
+            precio,
+            categoria,
+            stock: stock || 0,
+            imagen_base64: imagen_base64 || null, // Guardar la imagen en Base64 si existe
+        });
+
+        const productoGuardado = await nuevoProducto.save();
+        res.status(201).json(productoGuardado);
+    } catch (error) {
+        console.error("Error al crear producto:", error);
+        res.status(500).json({ message: "Error al crear el producto" });
+    }
 };
-
 
 // Actualizar un producto existente
-export const editProduct = async (req, res) => {
-  try {
-    const { name, price, year, image_base64 } = req.body;
+export const updateProduct = async (req, res) => {
+    try {
+        const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
 
-    const updatedData = {
-      name,
-      price,
-      year,
-      image: image_base64 || req.product.image, // Actualizar la imagen si existe
-      user: req.user.id,
-    };
+        const producto = await Producto.findById(req.params.id);
+        if (!producto) {
+            return res.status(404).json({ error: "Producto no encontrado" });
+        }
 
-    const updatedProduct = await Products.findByIdAndUpdate(req.params.id, updatedData, { new: true });
-    res.json(updatedProduct);
-  } catch (error) {
-    console.error("Error al editar producto:", error);
-    res.status(500).json({ message: "Error al editar el producto" });
-  }
+        // Actualizar campos
+        producto.nombre = nombre || producto.nombre;
+        producto.descripcion = descripcion || producto.descripcion;
+        producto.precio = precio || producto.precio;
+        producto.categoria = categoria || producto.categoria;
+        producto.stock = stock !== undefined ? stock : producto.stock;
+        producto.imagen_base64 = imagen_base64 || producto.imagen_base64;
+
+        const productoActualizado = await producto.save();
+        res.status(200).json(productoActualizado);
+    } catch (error) {
+        console.error("Error al actualizar producto:", error);
+        res.status(500).json({ message: "Error al actualizar el producto" });
+    }
 };
+
 // Eliminar un producto
 export const deleteProduct = async (req, res) => {
     try {
-        const { id } = req.params;
-        const productoEliminado = await Producto.findByIdAndDelete(id);
+        const productoEliminado = await Producto.findByIdAndDelete(req.params.id);
 
         if (!productoEliminado) {
             return res.status(404).json({ error: "Producto no encontrado" });
