@@ -46,13 +46,10 @@ export const createProduct = async (req, res) => {
     try {
         const { nombre, descripcion, precio, categoria, stock, imagen_base64 } = req.body;
 
-        // Validar si existe archivo subido o imagen en Base64
-        let imagen_url = "";
-        if (req.file) {
-            imagen_url = `uploads/${req.file.filename}`;
-        } else if (imagen_base64) {
-            imagen_url = imagen_base64; // Base64 si no se sube archivo
-        }
+        // Si se subió un archivo, guarda la URL de uploads
+        const imagen_url = req.file
+            ? `uploads/${req.file.filename}` // Ruta local
+            : imagen_base64 || null; // Base64 si no se sube archivo
 
         const nuevoProducto = new Producto({
             nombre,
@@ -64,22 +61,17 @@ export const createProduct = async (req, res) => {
         });
 
         const productoGuardado = await nuevoProducto.save();
-
-        // Corregir la URL de imagen antes de enviar la respuesta
-        const imagenCompleta = imagen_url.startsWith("uploads")
-            ? `https://backend-12sq.onrender.com/${imagen_url}`
-            : imagen_url;
-
         res.status(201).json({
             ...productoGuardado._doc,
-            imagen_url: imagenCompleta,
+            imagen_url: imagen_url.startsWith("uploads")
+                ? `https://backend-12sq.onrender.com/${imagen_url}`
+                : imagen_url,
         });
     } catch (error) {
-        console.error("Error al crear el producto:", error.message);
+        console.error("Error al crear el producto:", error);
         res.status(500).json({ error: "Error al crear el producto" });
     }
 };
-
 
 // Actualizar un producto existente
 export const updateProduct = async (req, res) => {
